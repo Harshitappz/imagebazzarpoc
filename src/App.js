@@ -25,6 +25,32 @@ function App() {
     setBlobURL(fileBlobURL);
   };
 
+  const handleClick = (e, index) => {
+    switch (e.detail) {
+      case 1:
+        let selectedList = document.getElementsByClassName('selected-list')
+        if(selectedList?.length){
+          for (var i = 0; i < selectedList?.length; i++) {
+            selectedList[i].classList.remove("focused-li")
+          }
+        }
+        if (e.target.tagName === 'LI') {
+          e.target.classList.add("focused-li")
+        }else if (e.target.tagName === 'DIV'){
+          // Add the class to the clicked <li> element's parent
+          e.target.parentNode.classList.add("focused-li");
+        }else if(e.target.tagName === 'BUTTON'){
+          e.target.parentNode.classList.add("focused-li");
+        }
+        break;
+      // case 2:
+      //   handleRemove(index,  index == 0 ? 'ul_li_child' + index : index == selectedResults?.length -1 ?'ul_li_child' + (index -1) : 'ul_li_child' + (index + 1))
+      //   break;
+      default: return;
+    }
+  };
+
+
   useEffect(() => {
     const handleKeydown = (e) => {
       if (!(document.activeElement.id === 'search-results')) {
@@ -33,23 +59,49 @@ function App() {
           // e.preventDefault()
           setSelectedIndex(0)
   
+        }else if (e.key === 'Enter') {
+          handleResultSelection(selectedIndex);
+          if(inputRef){
+            inputRef?.current?.focus()
+            setTimeout(function () {
+              inputRef?.current?.select() 
+            }, 10);
+            
+          }
         }
         return; // Exit early if the active element is not within the select-results
       }
-
       if (e.key === 'ArrowUp' && selectedIndex > 0) {
+        const container = document.getElementById('tablebody-search-container');
         const element = document.getElementById(results[selectedIndex - 1]?.vid + results[selectedIndex - 1]?.visible_keyword + (selectedIndex - 1));
-        element.scrollIntoView();
+        // element.scrollIntoView(false);
+        // Check if the element is at the top of the container
+        if ((selectedIndex * element.clientHeight) - element.clientHeight <= container.scrollTop) {
+          container.scrollTop -= element.clientHeight;
+        }
         setSelectedIndex(selectedIndex - 1);
         scrollContainerToSelected();
       } else if (e.key === 'ArrowDown' && selectedIndex < results.length - 1) {
         const element = document.getElementById(results[selectedIndex + 1]?.vid + results[selectedIndex + 1]?.visible_keyword + (selectedIndex + 1));
-        element.scrollIntoView();
+        // element.scrollIntoView(false);
+        const container = document.getElementById('tablebody-search-container');
+        if (
+          (selectedIndex * element.clientHeight) + element.clientHeight >=
+          container.scrollTop + container.clientHeight
+        ) {
+          container.scrollTop += element.clientHeight;
+        }
+      
         setSelectedIndex(selectedIndex + 1);
         scrollContainerToSelected();
       } else if (e.key === 'Enter' && selectedIndex !== null) {
         handleResultSelection(selectedIndex);
-       
+        if(inputRef){
+          inputRef?.current?.focus()
+          setTimeout(function () {
+            inputRef?.current?.select() 
+          }, 10);
+        }
       } else if (e.key === 'Tab') {
         // Hide the results popup or perform other actions if needed
         // e.preventDefault()
@@ -87,13 +139,34 @@ function App() {
   }
 
   const handleResultSelection = (selectedResult) => {
-    // Check if the selectedResult with the same 'vid' doesn't exist in the selectedResults array
-    if (!selectedResults.some((item) =>  item.vid === results[selectedResult].vid)) {
-      setSelectedResults((prevSelectedResults) => [...prevSelectedResults, results[selectedResult]]);
+    try{
+
+      // Check if the selectedResult with the same 'vid' doesn't exist in the selectedResults array
+      if ((!selectedResults?.some((item) =>  item?.vid === results[selectedResult]?.vid)) && selectedResult != null && selectedResult != undefined) {
+        setSelectedResults((prevSelectedResults) => [...prevSelectedResults, results[selectedResult]]);
+        setQuery(results[selectedResult]?.visible_keyword);
+      }else{
+        if ((!selectedResults?.some((item) =>  item?.vid === query)) && query?.trim()?.length && query?.trim()) {
+          setSelectedResults((prevSelectedResults) => [...prevSelectedResults, {
+            deleted_row: 0,
+            hiddenkeywords: [],
+            status: 1,
+            vid: query,
+            visible_keyword : query
+          }]);
+        }else{
+          if(!query?.trim()?.length){
+            setQuery("");
+          }else{
+            setQuery(results[selectedResult]?.visible_keyword);
+          }
+        }
+      }
+      setResults([])
+      setSelectedIndex(null)
+      // setQuery(results[selectedResult]?.visible_keyword);
     }
-    setResults([])
-    setSelectedIndex(null)
-    setQuery(results[selectedResult].visible_keyword);
+    catch(e){}
   };
 
   const scrollContainerToSelected = () => {
@@ -105,11 +178,37 @@ function App() {
     }
   };
 
-  const handleRemove = (index)=>{
+  const handleRemove = (index, id)=>{
     let copyArr = [...selectedResults]
     copyArr.splice(index, 1)
     setSelectedResults(copyArr)
+    if(id && selectedResults?.length){
+      let ele = document.getElementById(id)
+      if(ele){
+        ele?.focus();
+      }
+    }
   }
+
+  // const handleRemove = (index, id) => {
+  //   if (index !== null && index >= 0 && index < selectedResults.length) {
+  //     const copyArr = [...selectedResults];
+  //     copyArr.splice(index, 1);
+  //     setSelectedResults(copyArr);
+
+  //     // Focus on the next item if it exists
+  //     if (id && selectedResults?.length) {
+  //       // Delay the focus slightly to avoid issues with double-click
+  //       setTimeout(() => {
+  //         const nextElement = document.getElementById(id)
+  //         if (nextElement) {
+  //           nextElement.focus();
+  //         }
+  //       }, 10);
+  //     }
+  //   }
+  // };
+
 
   return (
     <div className="App">
@@ -120,7 +219,11 @@ function App() {
               <div className="row">
                 <div className="col-9">
                   <div className="d-flex mb-3">
-                    <label htmlFor="inputEmail3" className="col-form-label me-2 size-12" style={{lineHeight: 1}}>
+                    <label
+                      htmlFor="inputEmail3"
+                      className="col-form-label me-2 size-12"
+                      style={{ lineHeight: 1 }}
+                    >
                       Select Classification
                     </label>
                     <div className="" style={{ flex: 1 }}>
@@ -128,12 +231,16 @@ function App() {
                         type="text"
                         className="form-control rounded-0 size-12"
                         id="inputEmail3"
-                        style={{lineHeight: 1}}
+                        style={{ lineHeight: 1 }}
                       />
                     </div>
                   </div>
                   <div className="d-flex mb-3 position-relative">
-                    <label htmlFor="inputPassword3" className="col-form-label me-2 size-12" style={{lineHeight: 1}}>
+                    <label
+                      htmlFor="inputPassword3"
+                      className="col-form-label me-2 size-12"
+                      style={{ lineHeight: 1 }}
+                    >
                       Search Keyword
                     </label>
                     <div className="" style={{ flex: 1 }}>
@@ -145,7 +252,7 @@ function App() {
                         placeholder="Search (min 3 letters)"
                         onChange={(e) => searchMockData(e)}
                         ref={inputRef}
-                        style={{lineHeight: 1}}
+                        style={{ lineHeight: 1 }}
                       />
                     </div>
                     {!!results?.length && (
@@ -164,17 +271,21 @@ function App() {
                               <th>Hidden Keywords</th>
                             </tr>
                           </thead>
-                          <tbody>
+                          <tbody id="tablebody-search-container">
                             {results?.map((item, index) => {
                               return (
                                 <tr
                                   key={index}
                                   id={item?.vid + item?.visible_keyword + index}
                                   // onKeyDown={(e) => handleKeyDown(e, item, index)}
-                                  onClick={(e)=>{handleResultSelection(index)}}
+                                  onClick={(e) => {
+                                    handleResultSelection(index)
+                                  }}
                                   style={{
                                     background:
-                                      selectedIndex === index ? '#b6b6b6a1' : 'none',
+                                      selectedIndex === index
+                                        ? "#b6b6b6a1"
+                                        : "none",
                                   }}
                                 >
                                   <td>{index + 1}</td>
@@ -183,23 +294,33 @@ function App() {
                                   <td>
                                     {getArrayOfObjJoinToStringForKey(
                                       item?.hiddenkeywords,
-                                      'all_keyword',
-                                      ', '
+                                      "all_keyword",
+                                      ", "
                                     )}
                                   </td>
                                 </tr>
-                              );
+                              )
                             })}
                           </tbody>
                         </table>
-                        <div className='text-end p-2' style={{background: '#31959e54'}}>
-                          <button type="button" className="btn btn-sm btn-secondary me-2" onClick={()=>{
-                          }}>
+                        <div
+                          className="text-end p-2"
+                          style={{ background: "#31959e54" }}
+                        >
+                          <button
+                            type="button"
+                            className="btn btn-sm btn-secondary me-2"
+                            onClick={() => {}}
+                          >
                             Insert in Not Found
                           </button>
-                          <button type="button" className="btn btn-sm btn-secondary" onClick={()=>{
-                            setResults([])
-                          }}>
+                          <button
+                            type="button"
+                            className="btn btn-sm btn-secondary"
+                            onClick={() => {
+                              setResults([])
+                            }}
+                          >
                             Close
                           </button>
                         </div>
@@ -208,87 +329,163 @@ function App() {
                   </div>
                 </div>
                 <div className="col-3">
-                  <button type="submit" className="btn btn-sm btn-secondary" onClick={()=>{
-                    setActualKeywords(selectedResults)
-                  }}>
+                  <button
+                    type="submit"
+                    className="btn btn-sm btn-secondary mb-2"
+                    onClick={() => {
+                      setActualKeywords(selectedResults)
+                    }}
+                  >
                     Submit
+                  </button>
+                  <br />
+                  <button
+                    type="button"
+                    className="btn btn-sm btn-secondary mt-1"
+                    onClick={() => {
+                      handleResultSelection(selectedIndex)
+                    }}
+                  >
+                    Search
                   </button>
                 </div>
               </div>
             </div>
             <div className="row g-2 h-100" style={{ flex: 1 }}>
               <div className="col-4 parent-keyword max-height-for-list-scroll">
-                <ul className="no-bullets container-with-scroll container-child-full-height p-2">
-                
-                </ul>
+                <ul className="no-bullets container-with-scroll container-child-full-height p-2"></ul>
               </div>
               <div className="col-4 child-keyword max-height-for-list-scroll">
-                <ul className="no-bullets container-with-scroll container-child-full-height p-2">
-                  
-                </ul>
+                <ul className="no-bullets container-with-scroll container-child-full-height p-2"></ul>
               </div>
               <div className="col-4 selected-keyword max-height-for-list-scroll">
                 <ul className="no-bullets container-with-scroll container-child-full-height p-1">
-                  {selectedResults?.map((el, index)=>{
-                    return <li key={index} className='p-1 size-12' onDoubleClick={()=>{handleRemove(index)}}>{el?.visible_keyword}</li>
+                  {selectedResults?.map((el, index) => {
+                    return (
+                      <li
+                        key={el?.visible_keyword}
+                        id={"ul_li_child" + index}
+                        className="p-1 size-12 selected-list"
+                        style={{ cursor: "default", display: "flex" }}
+                        onClick={(e) => {
+                          handleClick(e, index)
+                        }}
+                        onDoubleClick={()=>{handleRemove(index,  index == 0 ? 'ul_li_child' + index : index == selectedResults?.length -1 ?'ul_li_child' + (index -1) : 'ul_li_child' + (index + 1))}}
+                        onMouseDown={function (e) {
+                          e.preventDefault()
+                        }}
+                      >
+                        <div
+                          style={{
+                            flex: 1,
+                            wordBreak: "break-word",
+                            paddingRight: 10,
+                            display: 'flex',
+                            alignItems: 'center'
+                          }}
+                        >
+                          {el?.visible_keyword}
+                        </div>
+                        <div>
+                          <button
+                            style={{ cursor: "pointer", padding: "0 4px",
+                            fontSize: "10px", fontWeight: "bold" }}
+                            className='btn btn-sm btn-danger'
+                            onClick={() => {
+                              handleRemove(
+                                index,
+                                index == 0
+                                  ? "ul_li_child" + index
+                                  : index == selectedResults?.length - 1
+                                  ? "ul_li_child" + (index - 1)
+                                  : "ul_li_child" + (index + 1)
+                              )
+                            }}
+                          >
+                            Delete
+                          </button>
+                        </div>
+                      </li>
+                    )
                   })}
-               
                 </ul>
               </div>
             </div>
-            <div className='text-end mt-2'>
-              <button type="button" className="btn btn-sm btn-secondary" onClick={()=>{
-                setResults([])
-                setSelectedIndex(null) 
-                setSelectedResults([])  
-                setActualKeywords([]) 
-                setQuery('')
-              }}>
+            <div className="text-end mt-2">
+              <button
+                type="button"
+                className="btn btn-sm btn-secondary"
+                onClick={() => {
+                  setResults([])
+                  setSelectedIndex(null)
+                  setSelectedResults([])
+                  setActualKeywords([])
+                  setQuery("")
+                }}
+              >
                 Save
               </button>
             </div>
           </div>
           <div className="col-4">
-            <div style={{height: 200, }} >
+            <div style={{ height: 200 }}>
               <h6>Selected Actual Words</h6>
-              <div className='p-2 size-12 container-with-scroll' style={{maxHeight: 190, border: '1px solid black'}}>
+              <div
+                className="p-2 size-12 container-with-scroll"
+                style={{ maxHeight: 190, border: "1px solid black" }}
+              >
                 {getArrayOfObjJoinToStringForKey(
                   actualKeywords,
-                  'visible_keyword',
-                  ', '
+                  "visible_keyword",
+                  ", "
                 )}
               </div>
             </div>
-            <div style={{marginTop: 35}}>
-              <input class="form-control form-control-sm" id="formFileSm" type="file"
+            <div style={{ marginTop: 35 }}>
+              <input
+                class="form-control form-control-sm"
+                id="formFileSm"
+                type="file"
                 ref={fileInputRef}
                 accept="images*" // Specify the allowed file types
                 onChange={handleFileChange}
               />
             </div>
-            <div className='mt-3' style={{background: "aliceblue", height: '100%', maxHeight: 280, overflow: 'hidden' }}>
+            <div
+              className="mt-3"
+              style={{
+                background: "aliceblue",
+                height: "100%",
+                maxHeight: 280,
+                overflow: "hidden",
+              }}
+            >
               {selectedFile && (
-                <div >
+                <div>
                   {/* <p>Selected File: {selectedFile.name}</p>
                   <a href={blobURL} download={selectedFile.name}>
                     Download File
                   </a> */}
-                  <img src={blobURL} alt={selectedFile?.name || 'Preview'} className='img-fluid' style={{
-                        objectFit: 'contain',
-                        objectPosition: "center center",
-                        maxHeight: "280px",
-                        height: "100%",
-                        width: "100%",
-                  }}/>
+                  <img
+                    src={blobURL}
+                    alt={selectedFile?.name || "Preview"}
+                    className="img-fluid"
+                    style={{
+                      objectFit: "contain",
+                      objectPosition: "center center",
+                      maxHeight: "280px",
+                      height: "100%",
+                      width: "100%",
+                    }}
+                  />
                 </div>
               )}
             </div>
           </div>
-          
         </div>
       </div>
     </div>
-  );
+  )
 }
 
 export default App;

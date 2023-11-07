@@ -74,7 +74,7 @@ ul.no-bullets {
   background-color: #fff;
   top: 50px;
   left: 50px;
-  width: 86vw;
+  width: 80vw;
   border: 10px #000 solid;
 }
 
@@ -184,4 +184,8 @@ ul.no-bullets {
 }
 .element-hover {
  background-color: #f5f5f5 !important;   
+}
+
+.focused-li{
+  background-color: #dbdbdb;
 }
