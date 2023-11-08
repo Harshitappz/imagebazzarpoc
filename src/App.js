@@ -4,6 +4,9 @@ export const getArrayOfObjJoinToStringForKey = (arr, key, joinKey = ", ") => {
   return arr?.map((u) => u[key])?.join(joinKey) || ""
 }
 
+export const findObjectIndexInArray = (arr, keyName, keyValue) => { return arr.findIndex(p => p[keyName] === keyValue) };
+
+
 function App() {
   const [query, setQuery] = useState("");
   const [results, setResults] = useState([]);
@@ -26,47 +29,72 @@ function App() {
   };
 
   const handleClick = (e, index) => {
-    switch (e.detail) {
-      case 1:
-        let selectedList = document.getElementsByClassName('selected-list')
-        if(selectedList?.length){
-          for (var i = 0; i < selectedList?.length; i++) {
-            selectedList[i].classList.remove("focused-li")
-          }
+
+    if(e.detail % 2 != 0  ){
+      let selectedList = document.getElementsByClassName('selected-list')
+      if(selectedList?.length){
+        for (var i = 0; i < selectedList?.length; i++) {
+          selectedList[i].classList.remove("focused-li")
         }
-        if (e.target.tagName === 'LI') {
-          e.target.classList.add("focused-li")
-        }else if (e.target.tagName === 'DIV'){
-          // Add the class to the clicked <li> element's parent
-          e.target.parentNode.classList.add("focused-li");
-        }else if(e.target.tagName === 'BUTTON'){
-          e.target.parentNode.classList.add("focused-li");
-        }
-        break;
-      // case 2:
-      //   handleRemove(index,  index == 0 ? 'ul_li_child' + index : index == selectedResults?.length -1 ?'ul_li_child' + (index -1) : 'ul_li_child' + (index + 1))
-      //   break;
-      default: return;
+      }
+      if (e.target.tagName === 'LI') {
+        e.target.classList.add("focused-li")
+      }else if (e.target.tagName === 'DIV'){
+        // Add the class to the clicked <li> element's parent
+        e.target.parentNode.classList.add("focused-li");
+      }else if(e.target.tagName === 'BUTTON'){
+        e.target.parentNode.classList.add("focused-li");
+      }
     }
+
+    else if(e.detail % 2 == 0){
+      handleRemove(index, index == 0 ? 'ul_li_child' + index : index == selectedResults?.length -1 ?'ul_li_child' + (index -1) : 'ul_li_child' + (index + 1))
+    }
+
+    // switch (e.detail) {
+    //   case 1:
+    //     let selectedList = document.getElementsByClassName('selected-list')
+    //     if(selectedList?.length){
+    //       for (var i = 0; i < selectedList?.length; i++) {
+    //         selectedList[i].classList.remove("focused-li")
+    //       }
+    //     }
+    //     if (e.target.tagName === 'LI') {
+    //       e.target.classList.add("focused-li")
+    //     }else if (e.target.tagName === 'DIV'){
+    //       // Add the class to the clicked <li> element's parent
+    //       e.target.parentNode.classList.add("focused-li");
+    //     }else if(e.target.tagName === 'BUTTON'){
+    //       e.target.parentNode.classList.add("focused-li");
+    //     }
+    //     break;
+    //   case 2:
+    //     handleRemove(index,  index == 0 ? 'ul_li_child' + index : index == selectedResults?.length -1 ?'ul_li_child' + (index -1) : 'ul_li_child' + (index + 1))
+    //     break;
+    //   default: 
+    //     handleRemove(index,  index == 0 ? 'ul_li_child' + index : index == selectedResults?.length -1 ?'ul_li_child' + (index -1) : 'ul_li_child' + (index + 1))
+    //     break;
+    // }
   };
 
 
   useEffect(() => {
     const handleKeydown = (e) => {
       if (!(document.activeElement.id === 'search-results')) {
-        if (e.key === 'Tab') {
+        if (e.key === 'Tab' && document.activeElement.id === 'search-input') {
           // Hide the results popup or perform other actions if needed
           // e.preventDefault()
           setSelectedIndex(0)
   
         }else if (e.key === 'Enter') {
-          handleResultSelection(selectedIndex);
-          if(inputRef){
-            inputRef?.current?.focus()
-            setTimeout(function () {
-              inputRef?.current?.select() 
-            }, 10);
-            
+          if(document.activeElement.id === 'search-input'){
+            handleResultSelection(selectedIndex);
+            if(inputRef){
+              inputRef?.current?.focus()
+              setTimeout(function () {
+                inputRef?.current?.select() 
+              }, 10);
+            }
           }
         }
         return; // Exit early if the active element is not within the select-results
@@ -106,7 +134,7 @@ function App() {
         // Hide the results popup or perform other actions if needed
         // e.preventDefault()
         // setSelectedIndex(0)
-
+        setSelectedIndex(null)
       } else if (e.key === 'Escape') {
         setResults([])
         setSelectedIndex(null)
@@ -140,27 +168,32 @@ function App() {
 
   const handleResultSelection = (selectedResult) => {
     try{
-
+      // console.log(selectedResult)
       // Check if the selectedResult with the same 'vid' doesn't exist in the selectedResults array
-      if ((!selectedResults?.some((item) =>  item?.vid === results[selectedResult]?.vid)) && selectedResult != null && selectedResult != undefined) {
-        setSelectedResults((prevSelectedResults) => [...prevSelectedResults, results[selectedResult]]);
+      if ((!selectedResults?.includes(results[selectedResult]?.visible_keyword)) && selectedResult != null && selectedResult != undefined && results[selectedResult] && query) {
+        setSelectedResults((prevSelectedResults) => [...prevSelectedResults, results[selectedResult]?.visible_keyword]);
         setQuery(results[selectedResult]?.visible_keyword);
       }else{
-        if ((!selectedResults?.some((item) =>  item?.vid === query)) && query?.trim()?.length && query?.trim()) {
-          setSelectedResults((prevSelectedResults) => [...prevSelectedResults, {
-            deleted_row: 0,
-            hiddenkeywords: [],
-            status: 1,
-            vid: query,
-            visible_keyword : query
-          }]);
-        }else{
-          if(!query?.trim()?.length){
-            setQuery("");
-          }else{
-            setQuery(results[selectedResult]?.visible_keyword);
-          }
+        let queryIndex = findObjectIndexInArray(results, 'visible_keyword', query)
+        if ((!selectedResults?.includes(results[queryIndex]?.visible_keyword)) && queryIndex > -1 ) {
+          setSelectedResults((prevSelectedResults) => [...prevSelectedResults, results[queryIndex]?.visible_keyword]);
+          setQuery(results[queryIndex]?.visible_keyword);
         }
+        // if ((!selectedResults?.some((item) =>  item?.visible_keyword === query)) && query?.trim()?.length && query?.trim()) {
+        //   setSelectedResults((prevSelectedResults) => [...prevSelectedResults, {
+        //     deleted_row: 0,
+        //     hiddenkeywords: [],
+        //     status: 1,
+        //     vid: query,
+        //     visible_keyword : query
+        //   }]);
+        // }else{
+        //   if(!query?.trim()?.length){
+        //     setQuery("");
+        //   }else{
+        //     setQuery(results[selectedResult]?.visible_keyword);
+        //   }
+        // }
       }
       setResults([])
       setSelectedIndex(null)
@@ -170,8 +203,8 @@ function App() {
   };
 
   const scrollContainerToSelected = () => {
-    if (resultsContainerRef.current && selectedIndex !== null) {
-      const selectedRow = resultsContainerRef.current.children[selectedIndex];
+    if (resultsContainerRef?.current && selectedIndex !== null) {
+      const selectedRow = resultsContainerRef?.current?.children[selectedIndex];
       if (selectedRow) {
         selectedRow.scrollIntoView({ behavior: 'smooth', block: 'center' });
       }
@@ -363,14 +396,14 @@ function App() {
                   {selectedResults?.map((el, index) => {
                     return (
                       <li
-                        key={el?.visible_keyword}
+                        key={el}
                         id={"ul_li_child" + index}
                         className="p-1 size-12 selected-list"
                         style={{ cursor: "default", display: "flex" }}
                         onClick={(e) => {
                           handleClick(e, index)
                         }}
-                        onDoubleClick={()=>{handleRemove(index,  index == 0 ? 'ul_li_child' + index : index == selectedResults?.length -1 ?'ul_li_child' + (index -1) : 'ul_li_child' + (index + 1))}}
+                        // onDoubleClick={()=>{handleRemove(index,  index == 0 ? 'ul_li_child' + index : index == selectedResults?.length -1 ?'ul_li_child' + (index -1) : 'ul_li_child' + (index + 1))}}
                         onMouseDown={function (e) {
                           e.preventDefault()
                         }}
@@ -384,9 +417,9 @@ function App() {
                             alignItems: 'center'
                           }}
                         >
-                          {el?.visible_keyword}
+                          {el}
                         </div>
-                        <div>
+                        {/* <div>
                           <button
                             style={{ cursor: "pointer", padding: "0 4px",
                             fontSize: "10px", fontWeight: "bold" }}
@@ -404,7 +437,7 @@ function App() {
                           >
                             Delete
                           </button>
-                        </div>
+                        </div> */}
                       </li>
                     )
                   })}
