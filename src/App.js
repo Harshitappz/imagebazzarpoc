@@ -467,11 +467,12 @@ function App() {
                 className="p-2 size-12 container-with-scroll"
                 style={{ maxHeight: 190, border: "1px solid black" }}
               >
-                {getArrayOfObjJoinToStringForKey(
+                {/* {getArrayOfObjJoinToStringForKey(
                   actualKeywords,
                   "visible_keyword",
                   ", "
-                )}
+                )} */}
+                {actualKeywords?.length ? actualKeywords?.join(", ") : '' }
               </div>
             </div>
             <div style={{ marginTop: 35 }}>
