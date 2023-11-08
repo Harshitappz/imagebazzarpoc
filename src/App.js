@@ -4,7 +4,7 @@ export const getArrayOfObjJoinToStringForKey = (arr, key, joinKey = ", ") => {
   return arr?.map((u) => u[key])?.join(joinKey) || ""
 }
 
-export const findObjectIndexInArray = (arr, keyName, keyValue) => { return arr.findIndex(p => p[keyName] === keyValue) };
+export const findObjectIndexInArray = (arr, keyName, keyValue) => { return arr?.findIndex(p => p[keyName]?.toLowerCase() === keyValue?.toLowerCase()) };
 
 
 function App() {
@@ -109,7 +109,7 @@ function App() {
         }
         setSelectedIndex(selectedIndex - 1);
         scrollContainerToSelected();
-      } else if (e.key === 'ArrowDown' && selectedIndex < results.length - 1) {
+      } else if ((e.key === 'ArrowDown' || e.key === 'ArrowRight' || e.key === 'ArrowLeft') && selectedIndex < results.length - 1) {
         const element = document.getElementById(results[selectedIndex + 1]?.vid + results[selectedIndex + 1]?.visible_keyword + (selectedIndex + 1));
         // element.scrollIntoView(false);
         const container = document.getElementById('tablebody-search-container');
@@ -122,7 +122,7 @@ function App() {
       
         setSelectedIndex(selectedIndex + 1);
         scrollContainerToSelected();
-      } else if (e.key === 'Enter' && selectedIndex !== null) {
+      }  else if (e.key === 'Enter' && selectedIndex !== null) {
         handleResultSelection(selectedIndex);
         if(inputRef){
           inputRef?.current?.focus()
@@ -313,6 +313,12 @@ function App() {
                                   // onKeyDown={(e) => handleKeyDown(e, item, index)}
                                   onClick={(e) => {
                                     handleResultSelection(index)
+                                    if(inputRef){
+                                      inputRef?.current?.focus()
+                                      setTimeout(function () {
+                                        inputRef?.current?.select() 
+                                      }, 10);
+                                    }
                                   }}
                                   style={{
                                     background:

@@ -130,7 +130,7 @@ ul.no-bullets {
 }
 .fixed_headers tbody tr:hover {
   cursor: pointer;
-  background-color: #b6b6b6a1 !important;
+  /* background-color: #b6b6b6a1 !important; */
 }
 .fixed_headers tbody tr:nth-child(even) {
   background-color: #ddd;
